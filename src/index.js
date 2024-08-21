@@ -5,6 +5,7 @@ const path = require('path');
 const port = 2409;
 const connection = require('./database/database');
 const Pergunta = require('./database/Pergunta');
+const Resposta = require('./database/Resposta');
 //database
 
 connection.authenticate()
@@ -59,16 +60,39 @@ app.get("/pergunta/:id", (req, res) => {
     var id = req.params.id;
 
     Pergunta.findOne({
-        where: {id: id} //"where" serve para fazer condições.
+        where: {id: id}//"where" serve para fazer condições.
     }).then(pergunta => {
         if(pergunta != undefined) { //pergunta encontrada
-            res.render("pergunta");
+
+            Resposta.findAll({ 
+                where: {perguntaId: pergunta.id},
+                order: [
+                    ['id', 'DESC']
+                ]
+            }).then(respostas => {
+                res.render("pergunta", {
+                    pergunta: pergunta,
+                    respostas: respostas
+                });
+            })
+
         }else {// não encontrada
             res.redirect("/");
         }
     });
 });
 
+app.post("/responder", (req, res) => {
+    var corpo = req.body.corpo;
+    var perguntaId = req.body.pergunta;
+
+    Resposta.create({
+        corpo: corpo,
+        perguntaId: perguntaId
+    }).then( () => {
+        res.redirect("/pergunta/"+perguntaId);
+    });
+});
 
 //iniciando o servidor
 app.listen(port, ()=> {
